@@ -20,11 +20,53 @@ void handleGet() {
 }
 
 void handlePost() {
-  String message = server.arg("message");
-  Serial.println("POST-Nachricht: " + message);
-  server.send(200, "text/plain", "Nachricht erhalten: " + message);
-  Serial.println("POST request request!");
+  // Stelle sicher, dass die empfangene JSON nicht größer ist als 200 Bytes
+  StaticJsonDocument<200> jsonDoc;
+
+  // Überprüfe, ob es eine gültige JSON-POST-Anfrage gibt
+  if (server.hasArg("plain")) {
+    // Deserialisiere die empfangene JSON
+    DeserializationError error = deserializeJson(jsonDoc, server.arg("plain"));
+
+    // Überprüfe, ob das Deserialisieren erfolgreich war
+    if (error == DeserializationError::Ok) {
+      // Überprüfe, ob alle erforderlichen Felder vorhanden sind
+      if (jsonDoc.containsKey("selectedIP") && jsonDoc.containsKey("selectedBrightness") &&
+          jsonDoc.containsKey("keyword") && jsonDoc.containsKey("rgbValues")) {
+
+        // Hole die Werte aus dem JSON-Dokument
+        String IP = jsonDoc["selectedIP"].as<String>();
+        int brightness = jsonDoc["selectedBrightness"].as<int>();
+        String keyword = jsonDoc["keyword"].as<String>();
+        String rgbValues = jsonDoc["rgbValues"].as<String>();
+
+        // Gib die empfangenen Daten im Serial Monitor aus
+        Serial.print("selectedIP: ");
+        Serial.println(IP);
+        Serial.print("selectedBrightness: ");
+        Serial.println(brightness);
+        Serial.print("String 2: ");
+        Serial.println(keyword);
+        Serial.print("String 3: ");
+        Serial.println(rgbValues);
+
+        // Antworte mit einer Erfolgsmeldung
+        server.send(200, "text/plain", "Data received successfully!");
+      } else {
+        // Wenn nicht alle erforderlichen Felder vorhanden sind, antworte mit "400 Bad Request"
+        server.send(400, "text/plain", "Bad Request - Missing fields");
+      }
+    } else {
+      // Bei einem Fehler beim Deserialisieren, antworte mit "400 Bad Request"
+      server.send(400, "text/plain", "Bad Request - Invalid JSON");
+    }
+  } else {
+    // Wenn keine JSON-POST-Anfrage empfangen wurde, antworte mit "400 Bad Request"
+    server.send(400, "text/plain", "Bad Request");
+  }
 }
+
+
 
 void setup() {
   Serial.begin(9600);
@@ -41,7 +83,7 @@ void setup() {
   Serial.println(WiFi.localIP());
   
   server.on("/get", handleGet);
-  server.on("/post", HTTP_POST, handlePost);
+  server.on("/post", handlePost);
   server.begin();
   Serial.println("Webserver gestartet");
 }
