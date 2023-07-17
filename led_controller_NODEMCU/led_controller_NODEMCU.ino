@@ -45,9 +45,9 @@ void handlePost() {
         Serial.println(IP);
         Serial.print("selectedBrightness: ");
         Serial.println(brightness);
-        Serial.print("String 2: ");
+        Serial.print("keyword 2: ");
         Serial.println(keyword);
-        Serial.print("String 3: ");
+        Serial.print("rgb 3: ");
         Serial.println(rgbValues);
 
         // Antworte mit einer Erfolgsmeldung
