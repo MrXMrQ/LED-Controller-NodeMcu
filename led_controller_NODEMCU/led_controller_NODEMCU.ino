@@ -1,14 +1,51 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
+#include <FastLED.h>
 
+//Webserver
 const char* ssid = "WLAN-NJYHLR";
 const char* password = "7810079531736273";
 const IPAddress staticIP(192, 168, 2, 199); //Freie IP Adresse Hinzufügen auf der der NodeMcu connecten kann
 const IPAddress gateway(192, 168, 2, 1);
 const IPAddress subnet(255, 255, 255, 0);
-
 ESP8266WebServer server(80);
+
+//LED-Strip
+#define LED_PIN D2
+#define NUM_LEDS 150
+
+CRGB leds[NUM_LEDS];
+
+void setup() {
+  Serial.begin(9600);
+  
+  WiFi.begin(ssid, password);
+  WiFi.config(staticIP, gateway, subnet); // Statische IP-Konfiguration
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Verbindung zum WiFi-Netzwerk wird hergestellt...");
+  }
+  
+  Serial.println("Verbunden mit dem WiFi-Netzwerk");
+  Serial.print("NodeMCU IP-Adresse: ");
+  Serial.println(WiFi.localIP());
+  
+  server.on("/get", handleGet);
+  server.on("/post", handlePost);
+  server.begin();
+  Serial.println("Webserver gestartet");
+
+  FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS); // Art des LED-Streifens anpassen, falls notwendig
+  Serial.println("LED-Konfig ready");
+  
+  FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS); // Art des LED-Streifens anpassen, falls notwendig
+  FastLED.setBrightness(20); // Helligkeit einstellen
+}
+
+void loop() {
+  server.handleClient();
+}
 
 void handleGet() {
   StaticJsonDocument<200> jsonDoc;
@@ -32,26 +69,36 @@ void handlePost() {
     if (error == DeserializationError::Ok) {
       // Überprüfe, ob alle erforderlichen Felder vorhanden sind
       if (jsonDoc.containsKey("selectedIP") && jsonDoc.containsKey("selectedBrightness") &&
-          jsonDoc.containsKey("keyword") && jsonDoc.containsKey("rgbValues")) {
+          jsonDoc.containsKey("keyword") && jsonDoc.containsKey("red") && 
+          jsonDoc.containsKey("green") && jsonDoc.containsKey("blue")) {
 
         // Hole die Werte aus dem JSON-Dokument
         String IP = jsonDoc["selectedIP"].as<String>();
         int brightness = jsonDoc["selectedBrightness"].as<int>();
         String keyword = jsonDoc["keyword"].as<String>();
-        String rgbValues = jsonDoc["rgbValues"].as<String>();
+        int red = jsonDoc["red"].as<int>();
+        int green = jsonDoc["green"].as<int>();
+        int blue = jsonDoc["blue"].as<int>();
+        
 
         // Gib die empfangenen Daten im Serial Monitor aus
         Serial.print("selectedIP: ");
         Serial.println(IP);
         Serial.print("selectedBrightness: ");
         Serial.println(brightness);
-        Serial.print("keyword 2: ");
+        Serial.print("keyword: ");
         Serial.println(keyword);
-        Serial.print("rgb 3: ");
-        Serial.println(rgbValues);
+        Serial.print("Red ");
+        Serial.println(red);
+        Serial.print("Green ");
+        Serial.println(green);
+        Serial.print("Blue: ");
+        Serial.println(blue);
+        Serial.println();
 
         // Antworte mit einer Erfolgsmeldung
         server.send(200, "text/plain", "Data received successfully!");
+        controllLED(brightness, keyword, red, green, blue);
       } else {
         // Wenn nicht alle erforderlichen Felder vorhanden sind, antworte mit "400 Bad Request"
         server.send(400, "text/plain", "Bad Request - Missing fields");
@@ -66,28 +113,11 @@ void handlePost() {
   }
 }
 
-
-
-void setup() {
-  Serial.begin(9600);
-  
-  WiFi.begin(ssid, password);
-  WiFi.config(staticIP, gateway, subnet); // Statische IP-Konfiguration
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Verbindung zum WiFi-Netzwerk wird hergestellt...");
-  }
-  
-  Serial.println("Verbunden mit dem WiFi-Netzwerk");
-  Serial.print("NodeMCU IP-Adresse: ");
-  Serial.println(WiFi.localIP());
-  
-  server.on("/get", handleGet);
-  server.on("/post", handlePost);
-  server.begin();
-  Serial.println("Webserver gestartet");
-}
-
-void loop() {
-  server.handleClient();
+void controllLED(int brightness, String keyword, int red, int green, int blue) {
+  if (keyword == "normal") {
+    Serial.println("change");
+    fill_solid(leds, NUM_LEDS, CRGB(red, green, blue));
+    FastLED.setBrightness(brightness);
+    FastLED.show();
+  } 
 }
