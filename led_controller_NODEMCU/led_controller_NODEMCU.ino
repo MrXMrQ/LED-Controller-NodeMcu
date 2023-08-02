@@ -79,22 +79,6 @@ void handlePost() {
         int red = jsonDoc["red"].as<int>();
         int green = jsonDoc["green"].as<int>();
         int blue = jsonDoc["blue"].as<int>();
-        
-
-        // Gib die empfangenen Daten im Serial Monitor aus
-        Serial.print("selectedIP: ");
-        Serial.println(IP);
-        Serial.print("selectedBrightness: ");
-        Serial.println(brightness);
-        Serial.print("keyword: ");
-        Serial.println(keyword);
-        Serial.print("Red ");
-        Serial.println(red);
-        Serial.print("Green ");
-        Serial.println(green);
-        Serial.print("Blue: ");
-        Serial.println(blue);
-        Serial.println();
 
         // Antworte mit einer Erfolgsmeldung
         server.send(200, "text/plain", "Data received successfully!");
